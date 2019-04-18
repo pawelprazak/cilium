@@ -172,3 +172,7 @@ func (ep *epInfoCache) GetCIDRPrefixLengths() ([]int, []int) {
 func (ep *epInfoCache) GetOptions() *option.IntOptions {
 	return ep.options
 }
+
+func (ep *epInfoCache) NeedsEgressProg() bool {
+	return true
+}

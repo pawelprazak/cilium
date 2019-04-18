@@ -37,8 +37,10 @@ var (
 
 const (
 	symbolFromEndpoint = "from-container"
+	symbolToEndpoint   = "to-container"
 
 	dirIngress = "ingress"
+	dirEgress  = "egress"
 )
 
 // endpoint provides access to endpoint information that is necessary to
@@ -49,6 +51,11 @@ type endpoint interface {
 	Logger(subsystem string) *logrus.Entry
 	StateDir() string
 	MapPath() string
+
+	// NeedsEgressProg returns true if the endpoint requires an egress
+	// program attached to the InterfaceName() invoking the section
+	// "to-container"
+	NeedsEgressProg() bool
 }
 
 func reloadDatapath(ctx context.Context, ep endpoint, dirs *directoryInfo) error {
@@ -80,6 +87,22 @@ func reloadDatapath(ctx context.Context, ep endpoint, dirs *directoryInfo) error
 				scopedLog.WithError(err).Warn("JoinEP: Failed to load program")
 			}
 			return err
+		}
+
+		if ep.NeedsEgressProg() {
+			if err := replaceDatapath(ctx, ep.InterfaceName(), objPath, symbolToEndpoint, dirEgress); err != nil {
+				scopedLog := ep.Logger(Subsystem).WithFields(logrus.Fields{
+					logfields.Path: objPath,
+					logfields.Veth: ep.InterfaceName(),
+				})
+				// Don't log an error here if the context was canceled or timed out;
+				// this log message should only represent failures with respect to
+				// loading the program.
+				if ctx.Err() == nil {
+					scopedLog.WithError(err).Warn("JoinEP: Failed to load program")
+				}
+				return err
+			}
 		}
 	}
 

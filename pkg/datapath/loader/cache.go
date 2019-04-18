@@ -58,6 +58,7 @@ var (
 		"cilium_tunnel",      // Global
 		"cilium_policy",      // Global
 		"from-container",     // Prog name
+		"to-container",       // Prog name
 	}
 )
 
