@@ -51,6 +51,13 @@
 #include "lib/nat.h"
 #include "lib/proxy.h"
 
+#define ENABLE_ARP_PASSTHROUGH
+#undef ENABLE_ARP_RESPONDER
+
+#if defined ENABLE_ARP_PASSTHROUGH && defined ENABLE_ARP_RESPONDER
+#error "Either ENABLE_ARP_PASSTHROUGH or ENABLE_ARP_RESPONDER can be defined"
+#endif
+
 #if defined ENABLE_IPV4 || defined ENABLE_IPV6
 static inline bool redirect_to_proxy(int verdict, int dir)
 {
@@ -700,6 +707,11 @@ int handle_xgress(struct __sk_buff *skb)
 		invoke_tailcall_if(__and(is_defined(ENABLE_IPV4), is_defined(ENABLE_IPV6)),
 				   CILIUM_CALL_IPV4_FROM_LXC, tail_handle_ipv4);
 		break;
+#ifdef ENABLE_ARP_PASSTHROUGH
+	case bpf_htons(ETH_P_ARP):
+		ret = TC_ACT_OK;
+		break;
+#endif
 #ifdef ENABLE_ARP_RESPONDER
 	case bpf_htons(ETH_P_ARP):
 		ep_tail_call(skb, CILIUM_CALL_ARP);
@@ -1244,6 +1256,11 @@ int handle_to_container(struct __sk_buff *skb)
 	}
 
 	switch (proto) {
+#ifdef ENABLE_ARP_PASSTHROUGH
+	case bpf_htons(ETH_P_ARP):
+		ret = TC_ACT_OK;
+		break;
+#endif
 #if 0
 #ifdef ENABLE_IPV6
 	case bpf_htons(ETH_P_IPV6):
