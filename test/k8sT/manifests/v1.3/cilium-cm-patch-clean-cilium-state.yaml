@@ -20,3 +20,5 @@ data:
 
   debug: "true"
   clean-cilium-state: "true"
+
+  bpf-ct-global-tcp-max: "1000000"
